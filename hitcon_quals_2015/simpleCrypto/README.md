@@ -1,12 +1,12 @@
 #Simple Crypto solution
 
 ## Intro
-SimpleCrypto was the easiest (less amount of point) crypto problem of the HITCON CTF Quals 2015. 
+SimpleCrypto was the easiest (least amount of point) crypto problem of the HITCON CTF Quals 2015. 
 
 It comes as a simple ruby/sinatra web application that asks you to login, creates a session cookie and then check if there's a flag "admin:true" in your cookie. There's no login per se, just a session cookie oracle. 
 
-## Princples of the attack
-The cryptography being used for the sessions cookie is a flavor of AES used a CFB mode. Looking at the size of the IV (initialization vetor) we are dealing with a 128 bits versoin of AES (ie a block is 16 bytes). As a super quick refresher, the AES cipher primitive works on block of data, here 16 bytes at the time, the *mode* (here CFB) is basically telling how you how to expand that behaviour to a stream of data longer than 16 bytes. Looking at wikipedia ([CFB mode](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_Feedback_.28CFB.29)) one can see how CFB works : you cipher the IV, xor the first 16 bytes of plain text with the ciphered xor; it gives you the first 16 bytes of ciphertext and also what's going to get feed in the ciphering primitive for the next 16 bytes block, and so on. 
+## Principles of the attack
+The cryptography being used for the sessions cookie is a flavor of AES used a CFB mode. Looking at the size of the IV (initialization vector) we are dealing with a 128 bits version of AES (ie a block is 16 bytes). As a super quick refresher, the AES cipher primitive works on block of data, here 16 bytes at the time, the *mode* (here CFB) is basically telling how you how to expand that behaviour to a stream of data longer than 16 bytes. Looking at wikipedia ([CFB mode](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_Feedback_.28CFB.29)) one can see how CFB works : you cipher the IV, xor the first 16 bytes of plain text with the ciphered xor; it gives you the first 16 bytes of ciphertext and also what's going to get feed in the ciphering primitive for the next 16 bytes block, and so on. 
 The flaw in this implementation is somewhat obvious: there's no verification of the integrity of the session cookie (no signature, HMAC, etc.) and basically the CFB mode generates a stream of pseudo-random bytes that are being xored to the plaintext. However, if you know the plain text being ciphered, a simple xor can modify it to whatever you want; the modification you made will propagate to the next block (as the cipher text is used to generate the next 16 pseudo-random bytes) but that's pretty much it. 
 
 ## The attack
@@ -34,10 +34,10 @@ The reason: up to the last 'a' of the username, we fit everything in a 16 byte b
 So the process: 
 
 1. Go to the website, register the username : `aaaV,VadminV:trueAB` and any password you fancy. Note: I replaced the '"' by 'V' so that they don't get escaped by the JSON parser, 'A' will be a '}' and 'B' will be a ' '. The last two are probably useless and could have been "} " directly but helped me visualise the process and make sure some special character doesn't get escaped without me realising it.  
-2. Grab the cookie you get (I'm using the chrome extension "Edith This Cookie"). 
-3. Find the XOR "difference" between `{"username":"aaaV,VadminV:trueAB", ......`  and `{"username":"aaa","admin":true} `, xor that difference to the cookie you have (because `A xor B xor C` is the same as `A xor C xor B`) and truncate the remaining part of the cookie (the one beyond those first 32 bytes (and the 16 bytes of IV that are at the begining of the cookie)).
+2. Grab the cookie you get (I'm using the chrome extension "Edit This Cookie"). 
+3. Find the XOR "difference" between `{"username":"aaaV,VadminV:trueAB", ......`  and `{"username":"aaa","admin":true} `, xor that difference to the cookie you have (because `A xor B xor C` is the same as `A xor C xor B`) and truncate the remaining part of the cookie (the one beyond those first 32 bytes (and the 16 bytes of IV that are at the beginning of the cookie)).
 4. Replace the old cookie with the new one.
 5. Get the flag !
 
 ## Conclusion
-You probably want to add a signature to your session cookie so that any shenanigans would be detected and probably goggle what is the best practice in those conditions rather than coming with your own exotic session cookie. 
+You probably want to add a signature to your session cookie so that any shenanigans would be detected and probably goggle what is the best practice in those conditions rather than coming up with your own exotic session cookie. 
