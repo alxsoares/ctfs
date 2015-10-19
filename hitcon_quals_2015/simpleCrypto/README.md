@@ -6,7 +6,12 @@ SimpleCrypto was the easiest (least amount of point) crypto problem of the HITCO
 It comes as a simple ruby/sinatra web application that asks you to login, creates a session cookie and then check if there's a flag "admin:true" in your cookie. There's no login per se, just a session cookie oracle. 
 
 ## Principles of the attack
-The cryptography being used for the sessions cookie is a flavor of AES used a CFB mode. Looking at the size of the IV (initialization vector) we are dealing with a 128 bits version of AES (ie a block is 16 bytes). As a super quick refresher, the AES cipher primitive works on block of data, here 16 bytes at the time, the *mode* (here CFB) is basically telling how you how to expand that behaviour to a stream of data longer than 16 bytes. Looking at wikipedia ([CFB mode](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_Feedback_.28CFB.29)) one can see how CFB works : you cipher the IV, xor the first 16 bytes of plain text with the ciphered xor; it gives you the first 16 bytes of ciphertext and also what's going to get feed in the ciphering primitive for the next 16 bytes block, and so on. 
+The cryptography being used for the sessions cookie is a flavor of AES used in CFB mode. 
+
+Looking at the size of the IV (initialization vector) we are dealing with a 128 bits version of AES (ie a block is 16 bytes).
+
+ As a super quick refresher, the AES cipher primitive works on block of data, here 16 bytes at the time, the *mode* (here CFB) is basically telling how you how to expand that behaviour to a stream of data longer than 16 bytes. Looking at wikipedia ([CFB mode](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_Feedback_.28CFB.29)) one can see how CFB works : you cipher the IV, xor the first 16 bytes of plain text with the ciphered xor; it gives you the first 16 bytes of ciphertext and also what's going to get feed in the ciphering primitive for the next 16 bytes block, and so on. 
+ 
 The flaw in this implementation is somewhat obvious: there's no verification of the integrity of the session cookie (no signature, HMAC, etc.) and basically the CFB mode generates a stream of pseudo-random bytes that are being xored to the plaintext. However, if you know the plain text being ciphered, a simple xor can modify it to whatever you want; the modification you made will propagate to the next block (as the cipher text is used to generate the next 16 pseudo-random bytes) but that's pretty much it. 
 
 ## The attack
