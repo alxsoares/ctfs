@@ -1,0 +1,1 @@
+FLAG = "CTF{DUMMY_DUMMY}"
